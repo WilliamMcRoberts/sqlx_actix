@@ -1,11 +1,12 @@
 use actix_cors::Cors;
-use actix_web::{get, http::header, post, web, App, HttpResponse, HttpServer, Responder};
-
+use actix_web::body::BoxBody;
+use actix_web::http::header::ContentType;
 use actix_web::middleware::Logger;
-use chrono::prelude::*;
+use actix_web::HttpRequest;
+use actix_web::{get, http::header, post, web, App, HttpResponse, HttpServer, Responder};
 use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+use sqlx::FromRow;
 use sqlx::{mysql::MySqlPoolOptions, MySql, Pool};
 
 #[get("/")]
@@ -13,9 +14,33 @@ async fn hello() -> impl Responder {
     HttpResponse::Ok().body("Hello world!")
 }
 
-#[post("/echo")]
-async fn echo(req_body: String) -> impl Responder {
-    HttpResponse::Ok().body(req_body)
+#[post("/user")]
+async fn create_user(body: web::Json<User>, data: web::Data<AppState>) -> impl Responder {
+    let result =
+        sqlx::query("INSERT INTO users (first_name,last_name,email,age) VALUES (?, ?, ?, ?)")
+            .bind(&body.first_name)
+            .bind(&body.last_name)
+            .bind(&body.email)
+            .bind(&body.age)
+            .execute(&data.db)
+            .await
+            .unwrap()
+            .last_insert_id();
+
+    match result {
+        0 => {
+            return HttpResponse::BadRequest().body("There was a problem creating the user.");
+        }
+        id => {
+            return HttpResponse::Ok().json(User {
+                id: Some(id),
+                first_name: body.first_name.clone(),
+                last_name: body.last_name.clone(),
+                email: body.email.clone(),
+                age: body.age,
+            });
+        }
+    }
 }
 
 #[get("/hello")]
@@ -77,7 +102,7 @@ async fn main() -> std::io::Result<()> {
 pub fn config(conf: &mut web::ServiceConfig) {
     let scope = web::scope("/api")
         .service(hello)
-        .service(echo)
+        .service(create_user)
         .service(manual_hello);
     conf.service(scope);
 }
@@ -86,11 +111,23 @@ struct AppState {
     db: Pool<MySql>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, FromRow, Serialize, Debug)]
 struct User {
-    id: Option<i32>,
+    id: Option<u64>,
     first_name: String,
     last_name: String,
     email: String,
     age: i32,
+}
+
+impl Responder for User {
+    type Body = BoxBody;
+
+    fn respond_to(self, _req: &HttpRequest) -> HttpResponse<Self::Body> {
+        let body = serde_json::to_string(&self).unwrap();
+
+        HttpResponse::Ok()
+            .content_type(ContentType::json())
+            .body(body)
+    }
 }

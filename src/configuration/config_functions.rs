@@ -16,13 +16,13 @@ pub fn config(conf: &mut web::ServiceConfig) {
     conf.service(scope);
 }
 
-pub async fn load_pool() -> MySqlPool {
+pub async fn load_pool(connection_max: u32) -> MySqlPool {
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
     println!("🔥 Connecting to {}", database_url);
 
     let pool = MySqlPoolOptions::new()
-        .max_connections(4)
+        .max_connections(connection_max)
         .connect(&database_url)
         .await;
 

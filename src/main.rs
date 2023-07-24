@@ -1,7 +1,7 @@
 mod configuration;
 mod handlers;
 mod models;
-use crate::configuration::config_functions::{config, load_pool, set_up_cors, set_up_logging};
+use crate::configuration::config_functions::*;
 use crate::models::app_state_model::AppState;
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};

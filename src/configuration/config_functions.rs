@@ -1,6 +1,4 @@
-use crate::handlers::user_handlers::{
-    create_user, delete_user, get_all_users, get_user_by_id, update_user,
-};
+use crate::handlers::user_handlers::*;
 use actix_cors::Cors;
 use actix_web::{http::header, web};
 use dotenv::dotenv;

@@ -8,17 +8,17 @@ use actix_web::{web, App, HttpServer};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // set up logging
+    // logging configuration
     set_up_logging();
 
-    // set up the database pool with max of 4 connections
+    // database configuration with max 4 connections
     let pool = load_pool(4).await;
 
     HttpServer::new(move || {
         // cors configuration
         let cors = set_up_cors();
 
-        // set up the server
+        // create server
         App::new()
             .app_data(web::Data::new(AppState { db: pool.clone() }))
             .configure(config)

@@ -3,16 +3,15 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
 #[derive(Deserialize, FromRow, Serialize, Debug)]
-pub struct User {
+pub struct UserNoPassword {
     pub id: Option<i32>,
     pub first_name: String,
     pub last_name: String,
     pub email: String,
     pub age: i32,
-    pub password: String,
 }
 
-impl Responder for User {
+impl Responder for UserNoPassword {
     type Body = BoxBody;
 
     fn respond_to(self, _req: &HttpRequest) -> HttpResponse<Self::Body> {
